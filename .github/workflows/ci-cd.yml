@@ -1,3 +1,4 @@
+```yaml
 name: CI/CD
 
 on:
@@ -15,6 +16,9 @@ env:
   IMAGE_NAME: ghcr.io/0xujjwalworks/notes-app
 
 jobs:
+  # ---------------------------------------------
+  # JOB 1: Test Django Application
+  # ---------------------------------------------
   test:
     name: Django checks and tests
     runs-on: ubuntu-latest
@@ -80,6 +84,9 @@ jobs:
           DB_PORT: '3306'
         run: python manage.py test
 
+  # ---------------------------------------------
+  # JOB 2: Build Docker Image
+  # ---------------------------------------------
   build:
     name: Build Docker image
     runs-on: ubuntu-latest
@@ -93,7 +100,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
         with:
           driver: docker-container
-          
+
       - name: Build image
         uses: docker/build-push-action@v6
         with:
@@ -104,7 +111,9 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-
+  # ---------------------------------------------
+  # JOB 3: Publish Image to GHCR
+  # ---------------------------------------------
   publish:
     name: Publish image to GitHub Container Registry
     runs-on: ubuntu-latest
@@ -138,5 +147,4 @@ jobs:
             ${{ env.IMAGE_NAME }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-
+```
