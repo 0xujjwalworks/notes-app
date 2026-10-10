@@ -86,6 +86,11 @@ jobs:
     needs: test
 
     steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-options: image=moby/buildkit:latest
+          
       - name: Check out source
         uses: actions/checkout@v4
 
