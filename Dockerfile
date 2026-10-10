@@ -1,21 +1,43 @@
-FROM python:3.9
+FROM python:3.11-slim AS builder
 
-WORKDIR /app/backend
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
 
-COPY requirements.txt /app/backend
+WORKDIR /build
+
 RUN apt-get update \
-    && apt-get upgrade -y \
-    && apt-get install -y gcc default-libmysqlclient-dev pkg-config \
+    && apt-get install -y --no-install-recommends build-essential default-libmysqlclient-dev pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
+COPY requirements.txt .
+RUN python -m venv /opt/venv \
+    && /opt/venv/bin/pip install --upgrade pip \
+    && /opt/venv/bin/pip install -r requirements.txt
 
-# Install app dependencies
-RUN pip install mysqlclient
-RUN pip install --no-cache-dir -r requirements.txt
+FROM python:3.11-slim AS runtime
 
-COPY . /app/backend
+ENV PATH="/opt/venv/bin:$PATH" \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    DJANGO_SETTINGS_MODULE=notesapp.settings
 
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends default-libmysqlclient-dev \
+    && rm -rf /var/lib/apt/lists/* \
+    && addgroup --system app \
+    && adduser --system --ingroup app app
+
+COPY --from=builder /opt/venv /opt/venv
+COPY . .
+
+RUN mkdir -p /app/staticfiles \
+    && python manage.py collectstatic --noinput \
+    && chown -R app:app /app
+
+USER app
 EXPOSE 8000
-CMD ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
-#RUN python manage.py migrate
-#RUN python manage.py makemigrations
+
+CMD ["gunicorn", "notesapp.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
