@@ -12,7 +12,7 @@ permissions:
   packages: write
 
 env:
-  IMAGE_NAME: ghcr.io/${{ github.repository }}
+  IMAGE_NAME: ghcr.io/0xujjwalworks/Notes-app:3acb1e80c4a1f946c88c6a047576477fe05e49dc
 
 jobs:
   test:
